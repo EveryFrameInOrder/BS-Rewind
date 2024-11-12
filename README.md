@@ -6,7 +6,7 @@ This is a collection of tools to help you move from Twitter to BlueSky Social. I
 
 It utilizes your Twitter Archive, publicly available data from Twitter, and the ATProto BlueSky Social API.
 
-## How do I use this?
+## Setup
 
 ### Step 1: Download your Twitter Archive
 1. Go to [Twitter](https://twitter.com) and log in.
@@ -27,4 +27,21 @@ It utilizes your Twitter Archive, publicly available data from Twitter, and the 
 1. Unzip the archive you downloaded from Twitter.
 2. There will be a folder called `data`.
 3. Copy the `data` folder to the same directory as this README.
+
+### Step 3: Install Python
+
+This project utilizes the [uv](https://github.com/astral-sh/uv) package manager.
+
+1. Install `uv` by following the instructions [here](https://docs.astral.sh/uv/getting-started/installation/).\
+2. You'll need Python 3.12, which you can download using uv:
+```sh
+uv python install 3.12
+```
+
+3. Install the dependencies:
+```sh
+uv pip install --requirement .\pyproject.toml
+```
+
+
 

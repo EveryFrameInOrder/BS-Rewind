@@ -1,39 +1,24 @@
 import asyncio
-import os
 import json
+import os
+import sys
 import time
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Set
-from urllib.parse import urlparse, parse_qs
-from dataclasses import dataclass
+from urllib.parse import parse_qs, urlparse
 
 import httpx
-import undetected_chromedriver as uc
 import orjson
+import undetected_chromedriver as uc
 from atproto import AsyncClient, models
-
-from PySide6.QtCore import QObject, Signal, Slot, QTimer, QThread, QMutex, QMutexLocker
-from PySide6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QTableWidget,
-    QTableWidgetItem,
-    QPushButton,
-    QLabel,
-    QHeaderView,
-    QMessageBox,
-    QProgressBar,
-    QSizePolicy,
-)
+from PySide6.QtCore import QMutex, QMutexLocker, QObject, QTimer, Signal, Slot
 from PySide6.QtGui import QPixmap, Qt
-import sys
-from io import BytesIO
-
-import qasync
-from qasync import asyncSlot
+from PySide6.QtWidgets import (QApplication, QHeaderView, QLabel, QMainWindow,
+                               QMessageBox, QProgressBar, QPushButton,
+                               QSizePolicy, QTableWidget, QTableWidgetItem,
+                               QVBoxLayout, QWidget)
 
 
 @dataclass
@@ -341,11 +326,15 @@ class MainWindow(QMainWindow):
     async def get_client(self) -> AsyncClient:
         """Get an authenticated Bluesky client"""
 
+
         if self.client is None or not hasattr(self.client, 'me'):
             self.client = AsyncClient()
+            bluesky_login = os.getenv("BLUESKY_LOGIN")
+            bluesky_password = os.getenv("BLUESKY_PASSWORD")
+
             await self.client.login(
-                login=os.getenv("BLUESKY_LOGIN"),
-                password=os.getenv("BLUESKY_PASSWORD"),
+                login=bluesky_login,
+                password=bluesky_password,
             )
             while not self.client.me:
                 await asyncio.sleep(1)

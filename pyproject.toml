@@ -1,0 +1,18 @@
+[project]
+name = "bs-rewind"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.10.10",
+    "atproto>=0.0.55",
+    "loguru>=0.7.2",
+    "orjson>=3.10.11",
+    "pillow>=11.0.0",
+    "pydantic-settings>=2.6.1",
+    "python-dateutil>=2.9.0.post0",
+    "pytz>=2024.2",
+    "requests>=2.32.3",
+    "undetected-chromedriver==3.5.5",
+]

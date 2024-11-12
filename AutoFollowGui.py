@@ -11,14 +11,16 @@ from urllib.parse import parse_qs, urlparse
 
 import httpx
 import orjson
+import qasync
 import undetected_chromedriver as uc
 from atproto import AsyncClient, models
 from PySide6.QtCore import QMutex, QMutexLocker, QObject, QTimer, Signal, Slot
 from PySide6.QtGui import QPixmap, Qt
-from PySide6.QtWidgets import (QApplication, QHeaderView, QLabel, QMainWindow,
-                               QMessageBox, QProgressBar, QPushButton,
-                               QSizePolicy, QTableWidget, QTableWidgetItem,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QDialog, QHBoxLayout, QHeaderView,
+                               QLabel, QLineEdit, QMainWindow, QMessageBox,
+                               QProgressBar, QPushButton, QSizePolicy,
+                               QTableWidget, QTableWidgetItem, QVBoxLayout,
+                               QWidget)
 
 
 @dataclass
@@ -30,11 +32,43 @@ class UserMapping:
     did: str
 
 
+class LoginDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Bluesky Login")
+        self.setModal(True)
+        # Create layout and widgets
+        layout = QVBoxLayout()
+        layout.setSpacing(10)
+        layout.addWidget(QLabel("Please enter your Bluesky login credentials:"))
+        self.username_input = QLineEdit()
+        self.password_input = QLineEdit()
+        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        login_button = QPushButton("Login")
+        cancel_button = QPushButton("Cancel")
+        # Connect buttons
+        login_button.clicked.connect(self.accept)
+        cancel_button.clicked.connect(self.reject)
+        # Add widgets to layout
+        layout.addWidget(QLabel("Username:"))
+        layout.addWidget(self.username_input)
+        layout.addWidget(QLabel("Password:"))
+        layout.addWidget(self.password_input)
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(login_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+
+        self.username_input.setText(os.getenv("BLUESKY_LOGIN", ""))
+        self.password_input.setText(os.getenv("BLUESKY_PASSWORD", ""))
+
+
 class TwitterBlueskyMapper(QObject):
     new_mapping = Signal(UserMapping)
     error_occurred = Signal(str)
 
-    def __init__(self, cache_dir: str = 'cache'):
+    def __init__(self, cache_dir: str = 'cache', login: str = '', password: str = ''):
         super().__init__()
         self.client = AsyncClient()
         self.cache_dir = Path(cache_dir)
@@ -45,6 +79,8 @@ class TwitterBlueskyMapper(QObject):
         self.bluesky_cache: Dict[str, dict] = self._load_cache(self.bluesky_cache_file)
         self.twitter_mutex = QMutex()
         self.bluesky_mutex = QMutex()
+        self.login = login
+        self.password = password
 
     def _load_cache(self, cache_file: Path) -> dict:
         """Load cache from file."""
@@ -121,7 +157,6 @@ class TwitterBlueskyMapper(QObject):
             if twitter_username in self.bluesky_cache:
                 return self.bluesky_cache[twitter_username]
 
-        
         try:
             handle = f'{twitter_username}'
             print(f'Fetching ATProto info for {twitter_username}...')
@@ -155,8 +190,8 @@ class TwitterBlueskyMapper(QObject):
         try:
             # Login to Bluesky
             await self.client.login(
-                login=os.getenv('BLUESKY_LOGIN'),
-                password=os.getenv('BLUESKY_PASSWORD'),
+                login=self.login,
+                password=self.password,
             )
 
             user_entries = self.load_user_entries(input_file)
@@ -217,9 +252,9 @@ class Worker(QObject):
     new_mapping = Signal(UserMapping)
     error_occurred = Signal(str)
 
-    def __init__(self, input_file: str):
+    def __init__(self, input_file: str, login: str, password: str):
         super().__init__()
-        self.mapper = TwitterBlueskyMapper()
+        self.mapper = TwitterBlueskyMapper(login=login, password=password)
         self.input_file = input_file
         self.mapper.new_mapping.connect(self.handle_new_mapping)
         self.mapper.error_occurred.connect(self.error_occurred.emit)
@@ -230,9 +265,6 @@ class Worker(QObject):
     @Slot(UserMapping)
     def handle_new_mapping(self, mapping: UserMapping):
         self.new_mapping.emit(mapping)
-
-
-import qasync
 
 
 class MainWindow(QMainWindow):
@@ -249,9 +281,15 @@ class MainWindow(QMainWindow):
         self.mapping_queue: asyncio.Queue = asyncio.Queue()
         self.follow_queue: asyncio.Queue = asyncio.Queue()  # New follow queue
 
-        # Setup UI
-        self.setup_ui()
+        # Prompt for login credentials
+        login_dialog = LoginDialog()
+        if login_dialog.exec() == QDialog.DialogCode.Accepted:
+            self.bluesky_login = login_dialog.username_input.text()
+            self.bluesky_password = login_dialog.password_input.text()
+        else:
+            sys.exit()  # User canceled login
 
+        # Check data path and following files
         data_path = Path("data")
         if not data_path.exists():
             raise FileNotFoundError("Please copy the `data` folder from your Twitter data export to the current directory.")
@@ -279,9 +317,15 @@ class MainWindow(QMainWindow):
                     json_f.seek(0)
                     json_f.write(current_value)
 
+        # Setup UI
+        self.setup_ui()
 
         # Initialize the worker
-        self.worker = Worker(input_file="./data/following.json")
+        self.worker = Worker(
+            input_file="./data/following.json",
+            login=self.bluesky_login,
+            password=self.bluesky_password
+        )
         self.worker.new_mapping.connect(self.queue_mapping)
         self.worker.error_occurred.connect(self.show_error_message)
 
@@ -290,17 +334,17 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.progress_bar)
         self.progress_bar.hide()
 
+        # Start processing after event loop starts
+        QTimer.singleShot(0, self.start_mapper_process)
 
     def setup_ui(self):
         """Initialize and setup all UI components"""
-        # Start processing after event loop starts
-        QTimer.singleShot(0, self.start_mapper_process)
         # Create main widget and layout
         self.central_widget = QWidget()
         self.layout = QVBoxLayout(self.central_widget)
         self.setCentralWidget(self.central_widget)
 
-        # Setupz table
+        # Create table
         self.table_widget = QTableWidget()
         self.table_widget.setColumnCount(5)
         self.table_widget.setHorizontalHeaderLabels(
@@ -325,16 +369,11 @@ class MainWindow(QMainWindow):
 
     async def get_client(self) -> AsyncClient:
         """Get an authenticated Bluesky client"""
-
-
         if self.client is None or not hasattr(self.client, 'me'):
             self.client = AsyncClient()
-            bluesky_login = os.getenv("BLUESKY_LOGIN")
-            bluesky_password = os.getenv("BLUESKY_PASSWORD")
-
             await self.client.login(
-                login=bluesky_login,
-                password=bluesky_password,
+                login=self.bluesky_login,
+                password=self.bluesky_password,
             )
             while not self.client.me:
                 await asyncio.sleep(1)
@@ -351,7 +390,7 @@ class MainWindow(QMainWindow):
             # Start the mapper process and the mapping consumer
             asyncio.create_task(self.worker.mapper_process())
             asyncio.create_task(self.process_mapping_queue())
-            asyncio.create_task(self.process_follow_queue())  # Moved here
+            asyncio.create_task(self.process_follow_queue())
             asyncio.create_task(self.get_followed_users())
 
         except Exception as e:
@@ -364,8 +403,8 @@ class MainWindow(QMainWindow):
         try:
             client = AsyncClient()
             await client.login(
-                login=os.getenv("BLUESKY_LOGIN"),
-                password=os.getenv("BLUESKY_PASSWORD"),
+                login=self.bluesky_login,
+                password=self.bluesky_password,
             )
 
             followed = []

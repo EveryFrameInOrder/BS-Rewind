@@ -12,11 +12,12 @@ It utilizes your Twitter Archive, publicly available data from Twitter, and the 
 1. Go to [Twitter](https://twitter.com) and log in.
 2. Click on your profile picture in the top right corner and select "Settings and privacy".
 3. Scroll down to the bottom of the page and click on "Request your archive".
-<details>
-<summary>Click here to see a screenshot</summary>
+  <details>
+  <summary>Click here to see a screenshot</summary>
+  
+  ![request-archive.png](assets%2Frequest-archive.png)
+  </details>
 
-![request-archive.png](assets%2Frequest-archive.png)
-</details>
 4. Fill out your password
 5. Wait for an email from Twitter with your 2FA code (if you have 2FA enabled)
 6. Enter the 2FA code

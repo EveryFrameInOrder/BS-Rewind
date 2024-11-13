@@ -1,0 +1,15 @@
+name: Build Windows Executable
+run-name: Build Windows Executable
+on: [push]
+jobs:
+  pyinstaller-build:
+    runs-on: windows-latest
+    steps:
+      - name: Create Executable
+        uses: sayyid5416/pyinstaller@v1
+        with:
+          python_ver: '3.11.6'
+          spec: 'AutoFollowGui.spec'
+          requirements: 'requirements.txt'
+          upload_exe_with_name: 'AutoFollowGui.exe'
+          options: --onefile, --name "BS-Rewind", --windowed,

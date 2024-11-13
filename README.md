@@ -60,7 +60,7 @@ pyinstaller --onefile --noconsole .\AutoFollowGui.py
 
 **or**
 ### Download the latest release as a ZIP file
-[AutoFollowGui](https://github.com/EveryFrameInOrder/BS-Rewind/actions/runs/11818683004/artifacts/2182148723)
+[AutoFollowGUI](https://github.com/EveryFrameInOrder/BS-Rewind/actions/runs/11819225890/artifacts/2182313603)
 
 
 ## FAQ

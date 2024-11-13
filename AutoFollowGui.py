@@ -463,15 +463,20 @@ class MainWindow(QMainWindow):
     def convert_file(self):
         data_path = Path("data")
         if not data_path.exists():
-            raise FileNotFoundError(
-                "Please copy the `data` folder from your Twitter data export to the current directory."
+            # Show error message and exit
+            self.show_error_message(
+                "Please copy the `data` folder from your Twitter data export to the same directory as this script."
             )
+            sys.exit()
+
         following_js = data_path / "following.js"
         following_json = data_path / "following.json"
         if not following_json.exists() and not following_js.exists():
-            raise FileNotFoundError(
-                "Please copy the `following.js` file from your Twitter data export to the `data` folder."
+            # Show error message and exit
+            self.show_error_message(
+                "Please ensure the `following.js` or `following.json` file is present in the `data` folder."
             )
+            sys.exit()
         if following_js.exists():
             # make a backup of the original file
             following_js_backup = data_path / "following.js.bak"
@@ -484,9 +489,11 @@ class MainWindow(QMainWindow):
                 with following_json.open("w") as json_f:
                     current_value = f.read()
                     if not current_value:
-                        raise ValueError(
-                            "Please copy the `following.json` file from your Twitter data export to the `data` folder."
+                        # Show error message and exit
+                        self.show_error_message(
+                            "Please copy the `data` folder from your Twitter data export to the same directory as this script."
                         )
+                        sys.exit()
 
                     current_value = current_value.strip().replace(
                         "window.YTD.following.part0 = ", ""

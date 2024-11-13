@@ -15,7 +15,7 @@ jobs:
           options: --onefile, --name "BS-Rewind", --windowed
 
       - name: Upload executable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: AutoFollowGui
-          path: dist\AutoFollowGui.exe
+          path: dist

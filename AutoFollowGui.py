@@ -221,10 +221,15 @@ class TwitterBlueskyMapper(QObject):
 
                 # compare handles
                 if actor.handle != handle:
-                    match_percent = fuzz.ratio(actor.handle, handle)
-                    if match_percent < 80:
+                    bsky_handle = actor.handle.split('.')[0] if '.bsky' in actor.handle else actor.handle
+
+                    threshold = 75 if '.bsky' in actor.handle else 55 # Lower threshold for custom domains
+
+                    match_percent = fuzz.ratio(bsky_handle, handle)
+                    if match_percent < threshold:
                         # Not a good match
                         return None
+
 
                 data = {
                     'did': actor.did,

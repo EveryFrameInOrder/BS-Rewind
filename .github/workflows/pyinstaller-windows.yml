@@ -12,4 +12,10 @@ jobs:
           spec: 'AutoFollowGui.spec'
           requirements: 'requirements.txt'
           upload_exe_with_name: 'AutoFollowGui.exe'
-          options: --onefile, --name "BS-Rewind", --windowed,
+          options: --onefile, --name "BS-Rewind", --windowed
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: AutoFollowGui
+          path: dist\AutoFollowGui.exe
